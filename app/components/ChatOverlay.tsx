@@ -23,7 +23,6 @@ export default function ChatOverlay() {
         const userText = input.trim();
         setInput("");
 
-        // Show user message immediately
         setMessages((prev) => [...prev, { role: "user", content: userText }]);
         setLoading(true);
 
@@ -36,13 +35,12 @@ export default function ChatOverlay() {
 
             const data = await res.json();
 
-            // Show assistant response
             setMessages((prev) => [
                 ...prev,
                 { role: "assistant", content: data.reply },
             ]);
 
-            // Navigation based on intent
+            // 🔀 NAVIGATION (DOES NOT CLOSE CHAT)
             if (data.intent === "ABOUT") router.push("/about");
 
             if (data.intent === "PROMOTION") {
@@ -54,10 +52,7 @@ export default function ChatOverlay() {
         } catch {
             setMessages((prev) => [
                 ...prev,
-                {
-                    role: "assistant",
-                    content: "Sorry, something went wrong. Please try again.",
-                },
+                { role: "assistant", content: "Something went wrong." },
             ]);
         } finally {
             setLoading(false);
@@ -66,17 +61,7 @@ export default function ChatOverlay() {
 
     return (
         <>
-            {/* 🔘 FLOATING BUTTON WHEN CHAT IS CLOSED */}
-            {!open && (
-                <button
-                    onClick={() => setOpen(true)}
-                    className="fixed bottom-6 right-6 z-40 bg-black text-white px-5 py-3 rounded-full shadow-lg"
-                >
-                    Chat
-                </button>
-            )}
-
-            {/* 🌑 LIGHT TRANSPARENT BLACK BACKGROUND */}
+            {/* 🌑 BACKGROUND OVERLAY */}
             {open && (
                 <div
                     className="fixed inset-0 bg-black/40 z-40"
@@ -84,7 +69,7 @@ export default function ChatOverlay() {
                 />
             )}
 
-            {/* 💬 CHAT MODAL */}
+            {/* 💬 CHAT MODAL (ALWAYS STAYS OPEN) */}
             {open && (
                 <div className="fixed z-50 top-1/2 left-1/2 w-[92%] max-w-md h-[520px] -translate-x-1/2 -translate-y-1/2 bg-white rounded-2xl shadow-2xl flex flex-col">
                     {/* HEADER */}
@@ -125,12 +110,21 @@ export default function ChatOverlay() {
                             onChange={(e) => setInput(e.target.value)}
                             placeholder="Ask something…"
                             enterKeyHint="send"
-                            inputMode="text"
                             disabled={loading}
                             className="w-full border rounded-md px-3 py-2 text-sm outline-none"
                         />
                     </form>
                 </div>
+            )}
+
+            {/* 🔘 OPEN CHAT BUTTON */}
+            {!open && (
+                <button
+                    onClick={() => setOpen(true)}
+                    className="fixed bottom-6 right-6 z-40 bg-black text-white px-5 py-3 rounded-full shadow-lg"
+                >
+                    Chat
+                </button>
             )}
         </>
     );
