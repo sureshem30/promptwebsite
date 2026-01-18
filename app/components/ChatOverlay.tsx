@@ -65,7 +65,7 @@ export default function ChatOverlay() {
             {open && (
                 <div
                     className="fixed inset-0 bg-black/40 z-40"
-                    onClick={() => setOpen(false)}
+                // onClick={() => setOpen(false)}
                 />
             )}
 
