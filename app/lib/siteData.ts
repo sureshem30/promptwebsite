@@ -28,7 +28,7 @@ export const siteData = {
             description: "Sports marketing campaign across social media",
         },
         {
-            title: "Ssidharth Malhotra X Yodha",
+            title: "Sidharth Malhotra X Yodha",
             slug: "sidharth-malhotra-x-yodha",
             category: "movie",
             description: "Movie promotion campaign that went viral",
