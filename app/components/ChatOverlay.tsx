@@ -1,12 +1,19 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 
 type Message = {
     role: "user" | "assistant";
     content: string;
 };
+
+declare global {
+    interface Window {
+        SpeechRecognition: any;
+        webkitSpeechRecognition: any;
+    }
+}
 
 export default function ChatOverlay() {
     const router = useRouter();
@@ -15,7 +22,62 @@ export default function ChatOverlay() {
     const [messages, setMessages] = useState<Message[]>([]);
     const [input, setInput] = useState("");
     const [loading, setLoading] = useState(false);
+    const [listening, setListening] = useState(false);
 
+    const recognitionRef = useRef<any>(null);
+
+    /* -----------------------------------------
+       INIT SPEECH RECOGNITION
+    ------------------------------------------ */
+    useEffect(() => {
+        if (typeof window === "undefined") return;
+
+        const SpeechRecognition =
+            window.SpeechRecognition || window.webkitSpeechRecognition;
+
+        if (!SpeechRecognition) return;
+
+        const recognition = new SpeechRecognition();
+        recognition.continuous = false;
+        recognition.interimResults = true;
+        recognition.lang = "en-US";
+
+        recognition.onresult = (event: any) => {
+            let transcript = "";
+            for (let i = event.resultIndex; i < event.results.length; i++) {
+                transcript += event.results[i][0].transcript;
+            }
+            setInput(transcript);
+        };
+
+        recognition.onend = () => {
+            setListening(false);
+        };
+
+        recognitionRef.current = recognition;
+    }, []);
+
+    /* -----------------------------------------
+       START / STOP MIC
+    ------------------------------------------ */
+    function toggleListening() {
+        if (!recognitionRef.current) {
+            alert("Speech recognition not supported in this browser.");
+            return;
+        }
+
+        if (listening) {
+            recognitionRef.current.stop();
+            setListening(false);
+        } else {
+            recognitionRef.current.start();
+            setListening(true);
+        }
+    }
+
+    /* -----------------------------------------
+       SEND MESSAGE
+    ------------------------------------------ */
     async function handleSubmit(e: React.FormEvent) {
         e.preventDefault();
         if (!input.trim() || loading) return;
@@ -40,7 +102,6 @@ export default function ChatOverlay() {
                 { role: "assistant", content: data.reply },
             ]);
 
-            // 🔀 NAVIGATION (DOES NOT CLOSE CHAT)
             if (data.intent === "ABOUT") router.push("/about");
 
             if (data.intent === "PROMOTION") {
@@ -61,15 +122,15 @@ export default function ChatOverlay() {
 
     return (
         <>
-            {/* 🌑 BACKGROUND OVERLAY */}
+            {/* BACKGROUND */}
             {open && (
                 <div
                     className="fixed inset-0 bg-black/40 z-40"
-                // onClick={() => setOpen(false)}
+                    onClick={() => setOpen(false)}
                 />
             )}
 
-            {/* 💬 CHAT MODAL (ALWAYS STAYS OPEN) */}
+            {/* CHAT MODAL */}
             {open && (
                 <div className="fixed z-50 top-1/2 left-1/2 w-[92%] max-w-md h-[520px] -translate-x-1/2 -translate-y-1/2 bg-white rounded-2xl shadow-2xl flex flex-col">
                     {/* HEADER */}
@@ -77,7 +138,7 @@ export default function ChatOverlay() {
                         <span className="font-semibold">Chat Assistant</span>
                         <button
                             onClick={() => setOpen(false)}
-                            className="text-xl leading-none text-gray-500 hover:text-black"
+                            className="text-xl text-gray-500"
                         >
                             ×
                         </button>
@@ -102,22 +163,33 @@ export default function ChatOverlay() {
                         )}
                     </div>
 
-                    {/* INPUT (NO SEND BUTTON) */}
-                    <form onSubmit={handleSubmit} className="px-3 py-3 border-t">
+                    {/* INPUT + MIC */}
+                    <form
+                        onSubmit={handleSubmit}
+                        className="flex items-center gap-2 px-3 py-3 border-t"
+                    >
                         <input
-                            type="text"
                             value={input}
                             onChange={(e) => setInput(e.target.value)}
-                            placeholder="Ask something…"
+                            placeholder={listening ? "Listening..." : "Ask something…"}
                             enterKeyHint="send"
                             disabled={loading}
-                            className="w-full border rounded-md px-3 py-2 text-sm outline-none"
+                            className="flex-1 border rounded-md px-3 py-2 text-sm outline-none"
                         />
+
+                        <button
+                            type="button"
+                            onClick={toggleListening}
+                            className={`w-10 h-10 rounded-full flex items-center justify-center text-white ${listening ? "bg-red-500" : "bg-black"
+                                }`}
+                        >
+                            🎤
+                        </button>
                     </form>
                 </div>
             )}
 
-            {/* 🔘 OPEN CHAT BUTTON */}
+            {/* OPEN CHAT BUTTON */}
             {!open && (
                 <button
                     onClick={() => setOpen(true)}
